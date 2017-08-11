@@ -57,6 +57,9 @@ public:
   ///* Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
+  ///* Radar noise measurements matrix
+  MatrixXd noise_radar_;
+
   ///* Weights of sigma points
   VectorXd weights_;
 
@@ -66,6 +69,8 @@ public:
   ///* Augmented state dimension
   int n_aug_;
 
+  ///* Radar measurements dimension
+  int n_z_ = 3;
   ///* Sigma point spreading parameter
   double lambda_;
 
@@ -107,13 +112,11 @@ public:
 
 private:
 
-
-  void GenerateSigmaPoints(MatrixXd* Xsig_out);
-  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
-  void SigmaPointPrediction(MatrixXd* Xsig_out);
-  void PredictMeanAndCovariance(VectorXd* x_pred, MatrixXd* P_pred);
-  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out);
-  void UpdateState(VectorXd* x_out, MatrixXd* P_out);
+  void GenerateAugmentedSigmaPoints(MatrixXd  &Xsig_out);
+  void SigmaPointPrediction(MatrixXd &Xsig_aug, double delta_t, MatrixXd &Xsig_out);
+  void PredictMeanAndCovariance();
+  void PredictRadarMeasurement(MatrixXd &Zsig, VectorXd &z_pred, MatrixXd &S);
+  void UpdateState((MeasurementPackage meas_package, MatrixXd &Zsig, VectorXd &z_pred, MatrixXd &S);
 
 };
 
