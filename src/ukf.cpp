@@ -20,6 +20,9 @@ UKF::UKF() {
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
 
+  // if this is true print NIS for lidar and radar
+  nis_enabled_ = false;
+
   // State dimension
   n_x_ = 5;
 
@@ -36,15 +39,15 @@ UKF::UKF() {
   P_ = MatrixXd(n_x_, n_x_);
   P_ << 1, 0, 0, 0, 0,
         0, 1, 0, 0, 0,
-        0, 0, 5, 0, 0,
+        0, 0, 1, 0, 0,
         0, 0, 0, 1, 0,
         0, 0, 0, 0, 1;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 10;
+  std_a_ = 1.5;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 10;
+  std_yawdd_ = 0.7;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -85,6 +88,12 @@ UKF::UKF() {
   R_ = MatrixXd(2, 2);
   R_ << std_laspx_*std_laspx_, 0,
         0,                     std_laspy_*std_laspy_;
+
+  lidar_count_ = 0;
+  lidar_count_59_ = 0;
+  radar_count_ = 0;
+  radar_count_78_ = 0;
+
 }
 
 UKF::~UKF() {}
@@ -183,7 +192,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_) * P_;
-
+  ClaculateNIS(y, Si, lidar_count_, lidar_count_59_, "LASER", 5.991);
 }
 
 /**
@@ -366,7 +375,8 @@ void UKF::UpdateState(MeasurementPackage meas_package, MatrixXd &Zsig, VectorXd 
   }
 
   //calculate Kalman gain K;
-  MatrixXd K = Tc * S.inverse();
+  MatrixXd Si = S.inverse();
+  MatrixXd K = Tc * Si;
 
   //update state mean and covariance matrix
   VectorXd z_diff = z - z_pred;
@@ -375,4 +385,20 @@ void UKF::UpdateState(MeasurementPackage meas_package, MatrixXd &Zsig, VectorXd 
   x_ += K * (z_diff);
 
   P_ -= K * S * K.transpose();
+
+  ClaculateNIS(z_diff, Si, radar_count_, radar_count_78_, "RADAR", 7.815);
+
+}
+
+void UKF::ClaculateNIS(VectorXd &z_diff, MatrixXd &S_inverted, int &count, int &count_78, const char* sensorType, double cut_off) {
+  if (nis_enabled_) {
+    count++;
+    double nis = z_diff.transpose() * S_inverted * z_diff;
+    if (nis > cut_off) {
+      count_78++;
+    }
+    if (count % 100) {
+      cout << sensorType << " NIS % over 7.815: " << 100.0 * count_78 / count << endl;
+    }
+  }
 }

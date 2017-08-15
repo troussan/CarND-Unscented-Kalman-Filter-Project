@@ -21,6 +21,9 @@ public:
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
 
+  ///* if this is true print NIS for lidar and radar
+  bool nis_enabled_;
+
   ///* if this is false, radar measurements will be ignored (except for init)
   bool use_radar_;
 
@@ -55,7 +58,7 @@ public:
   double std_radphi_;
 
   ///* Radar measurement noise standard deviation radius change in m/s
-  double std_radrd_ ;
+  double std_radrd_;
 
   ///* Radar noise measurements matrix
   MatrixXd noise_radar_;
@@ -116,13 +119,23 @@ public:
   void UpdateRadar(MeasurementPackage meas_package);
 
 private:
+  int lidar_count_;
+  int lidar_count_59_;
+  int radar_count_;
+  int radar_count_78_;
 
-  void GenerateAugmentedSigmaPoints(MatrixXd  &Xsig_out);
+  void GenerateAugmentedSigmaPoints(MatrixXd &Xsig_out);
+
   void SigmaPointPrediction(MatrixXd &Xsig_aug, double delta_t);
+
   void PredictMeanAndCovariance();
+
   void PredictRadarMeasurement(MatrixXd &Zsig, VectorXd &z_pred, MatrixXd &S);
+
   void UpdateState(MeasurementPackage meas_package, MatrixXd &Zsig, VectorXd &z_pred, MatrixXd &S);
 
+  void ClaculateNIS(VectorXd &z_diff, MatrixXd &S_inverted, int &count, int &count_78,
+                    const char* sensorType, double cut_off);
 };
 
 #endif /* UKF_H */
